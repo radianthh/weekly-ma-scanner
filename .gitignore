@@ -1,13 +1,21 @@
+# 자격증명 — 절대 커밋 금지
 .env
+.env.local
+.env.bak.*
 .kiwoom_token_cache.json
 .kiwoom_token_cache.json.tmp
+
+# 실행 중 생기는 것
 .cache/
+run.log
+
+# 파이썬
 .venv/
 __pycache__/
 *.py[cod]
-.DS_Store
-_sample_report.html
 
-# .env 백업본에도 키가 들어 있다
-.env.bak.*
-.env.local
+# 편집기·OS
+.claude/
+.vscode/
+.idea/
+.DS_Store
