@@ -5,9 +5,10 @@
 .kiwoom_token_cache.json
 .kiwoom_token_cache.json.tmp
 
-# 실행 중 생기는 것
+# 실행 중 생기는 것 (리포트는 메일 첨부로 보관된다)
 .cache/
 run.log
+reports/
 
 # 파이썬
 .venv/
