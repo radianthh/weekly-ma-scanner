@@ -1,0 +1,381 @@
+{
+  "asof": "2026-08-28",
+  "trade_date": "2026-08-28",
+  "min_cap_eok": 3000,
+  "universe": 643,
+  "tickers": [
+    "055550",
+    "144960",
+    "219130",
+    "041830",
+    "001450",
+    "003690",
+    "483650",
+    "161890",
+    "002990",
+    "105560",
+    "415640",
+    "086790",
+    "010950",
+    "093320",
+    "079940",
+    "453340",
+    "017890",
+    "078930",
+    "007070",
+    "001800",
+    "006340",
+    "002810",
+    "121440",
+    "033780",
+    "007340",
+    "089860",
+    "252990",
+    "340570",
+    "317400",
+    "018260",
+    "028050",
+    "181710",
+    "092730",
+    "003550",
+    "073240",
+    "096530",
+    "241710",
+    "092230",
+    "036800",
+    "017670",
+    "278470",
+    "003490",
+    "180640",
+    "192820",
+    "009420",
+    "085620",
+    "282330",
+    "119850",
+    "092190",
+    "236200",
+    "005950",
+    "108670",
+    "244920"
+  ],
+  "detail": {
+    "055550": {
+      "name": "신한지주",
+      "market": "KOSPI",
+      "cap_eok": 514986.9,
+      "streak": 57
+    },
+    "144960": {
+      "name": "뉴파워프라즈마",
+      "market": "KOSDAQ",
+      "cap_eok": 4212.0,
+      "streak": 19
+    },
+    "219130": {
+      "name": "타이거일렉",
+      "market": "KOSDAQ",
+      "cap_eok": 3921.2,
+      "streak": 19
+    },
+    "041830": {
+      "name": "인바디",
+      "market": "KOSDAQ",
+      "cap_eok": 8129.0,
+      "streak": 16
+    },
+    "001450": {
+      "name": "현대해상",
+      "market": "KOSPI",
+      "cap_eok": 44670.1,
+      "streak": 15
+    },
+    "003690": {
+      "name": "코리안리",
+      "market": "KOSPI",
+      "cap_eok": 25872.0,
+      "streak": 15
+    },
+    "483650": {
+      "name": "달바글로벌",
+      "market": "KOSPI",
+      "cap_eok": 28684.3,
+      "streak": 10
+    },
+    "161890": {
+      "name": "한국콜마",
+      "market": "KOSPI",
+      "cap_eok": 38169.4,
+      "streak": 9
+    },
+    "002990": {
+      "name": "금호건설",
+      "market": "KOSPI",
+      "cap_eok": 6341.6,
+      "streak": 9
+    },
+    "105560": {
+      "name": "KB금융",
+      "market": "KOSPI",
+      "cap_eok": 608644.2,
+      "streak": 8
+    },
+    "415640": {
+      "name": "KB발해인프라",
+      "market": "KOSPI",
+      "cap_eok": 12806.0,
+      "streak": 8
+    },
+    "086790": {
+      "name": "하나금융지주",
+      "market": "KOSPI",
+      "cap_eok": 373140.1,
+      "streak": 7
+    },
+    "010950": {
+      "name": "S-Oil",
+      "market": "KOSPI",
+      "cap_eok": 167973.5,
+      "streak": 7
+    },
+    "093320": {
+      "name": "케이아이엔엑스",
+      "market": "KOSDAQ",
+      "cap_eok": 7432.2,
+      "streak": 7
+    },
+    "079940": {
+      "name": "가비아",
+      "market": "KOSDAQ",
+      "cap_eok": 6153.4,
+      "streak": 7
+    },
+    "453340": {
+      "name": "현대그린푸드",
+      "market": "KOSPI",
+      "cap_eok": 6127.4,
+      "streak": 7
+    },
+    "017890": {
+      "name": "한국알콜",
+      "market": "KOSDAQ",
+      "cap_eok": 3051.4,
+      "streak": 7
+    },
+    "078930": {
+      "name": "GS",
+      "market": "KOSPI",
+      "cap_eok": 120021.0,
+      "streak": 6
+    },
+    "007070": {
+      "name": "GS리테일",
+      "market": "KOSPI",
+      "cap_eok": 22281.4,
+      "streak": 6
+    },
+    "001800": {
+      "name": "오리온홀딩스",
+      "market": "KOSPI",
+      "cap_eok": 15761.0,
+      "streak": 6
+    },
+    "006340": {
+      "name": "대원전선",
+      "market": "KOSPI",
+      "cap_eok": 10672.2,
+      "streak": 5
+    },
+    "002810": {
+      "name": "삼영무역",
+      "market": "KOSPI",
+      "cap_eok": 4108.9,
+      "streak": 5
+    },
+    "121440": {
+      "name": "골프존홀딩스",
+      "market": "KOSDAQ",
+      "cap_eok": 3534.0,
+      "streak": 5
+    },
+    "033780": {
+      "name": "KT&G",
+      "market": "KOSPI",
+      "cap_eok": 183017.8,
+      "streak": 4
+    },
+    "007340": {
+      "name": "DN오토모티브",
+      "market": "KOSPI",
+      "cap_eok": 27617.1,
+      "streak": 4
+    },
+    "089860": {
+      "name": "롯데렌탈",
+      "market": "KOSPI",
+      "cap_eok": 17319.6,
+      "streak": 4
+    },
+    "252990": {
+      "name": "샘씨엔에스",
+      "market": "KOSDAQ",
+      "cap_eok": 8364.3,
+      "streak": 4
+    },
+    "340570": {
+      "name": "티앤엘",
+      "market": "KOSDAQ",
+      "cap_eok": 4965.7,
+      "streak": 4
+    },
+    "317400": {
+      "name": "자이에스앤디",
+      "market": "KOSPI",
+      "cap_eok": 4363.0,
+      "streak": 4
+    },
+    "018260": {
+      "name": "삼성에스디에스",
+      "market": "KOSPI",
+      "cap_eok": 188028.1,
+      "streak": 3
+    },
+    "028050": {
+      "name": "삼성E&A",
+      "market": "KOSPI",
+      "cap_eok": 95550.0,
+      "streak": 3
+    },
+    "181710": {
+      "name": "NHN",
+      "market": "KOSPI",
+      "cap_eok": 22828.9,
+      "streak": 3
+    },
+    "092730": {
+      "name": "네오팜",
+      "market": "KOSDAQ",
+      "cap_eok": 4063.1,
+      "streak": 3
+    },
+    "003550": {
+      "name": "LG",
+      "market": "KOSPI",
+      "cap_eok": 175836.3,
+      "streak": 2
+    },
+    "073240": {
+      "name": "금호타이어",
+      "market": "KOSPI",
+      "cap_eok": 21142.4,
+      "streak": 2
+    },
+    "096530": {
+      "name": "씨젠",
+      "market": "KOSDAQ",
+      "cap_eok": 18618.6,
+      "streak": 2
+    },
+    "241710": {
+      "name": "코스메카코리아",
+      "market": "KOSDAQ",
+      "cap_eok": 16436.5,
+      "streak": 2
+    },
+    "092230": {
+      "name": "KPX홀딩스",
+      "market": "KOSPI",
+      "cap_eok": 4406.3,
+      "streak": 2
+    },
+    "036800": {
+      "name": "나이스정보통신",
+      "market": "KOSDAQ",
+      "cap_eok": 3276.0,
+      "streak": 2
+    },
+    "017670": {
+      "name": "SK텔레콤",
+      "market": "KOSPI",
+      "cap_eok": 211783.0,
+      "streak": 1
+    },
+    "278470": {
+      "name": "에이피알",
+      "market": "KOSPI",
+      "cap_eok": 172777.1,
+      "streak": 1
+    },
+    "003490": {
+      "name": "대한항공",
+      "market": "KOSPI",
+      "cap_eok": 105679.3,
+      "streak": 1
+    },
+    "180640": {
+      "name": "한진칼",
+      "market": "KOSPI",
+      "cap_eok": 87658.9,
+      "streak": 1
+    },
+    "192820": {
+      "name": "코스맥스",
+      "market": "KOSPI",
+      "cap_eok": 34389.0,
+      "streak": 1
+    },
+    "009420": {
+      "name": "한올바이오파마",
+      "market": "KOSPI",
+      "cap_eok": 33747.5,
+      "streak": 1
+    },
+    "085620": {
+      "name": "미래에셋생명",
+      "market": "KOSPI",
+      "cap_eok": 31361.8,
+      "streak": 1
+    },
+    "282330": {
+      "name": "BGF리테일",
+      "market": "KOSPI",
+      "cap_eok": 25407.3,
+      "streak": 1
+    },
+    "119850": {
+      "name": "지엔씨에너지",
+      "market": "KOSDAQ",
+      "cap_eok": 8586.3,
+      "streak": 1
+    },
+    "092190": {
+      "name": "서울바이오시스",
+      "market": "KOSDAQ",
+      "cap_eok": 4224.5,
+      "streak": 1
+    },
+    "236200": {
+      "name": "슈프리마",
+      "market": "KOSDAQ",
+      "cap_eok": 3905.6,
+      "streak": 1
+    },
+    "005950": {
+      "name": "이수화학",
+      "market": "KOSPI",
+      "cap_eok": 3186.9,
+      "streak": 1
+    },
+    "108670": {
+      "name": "LX하우시스",
+      "market": "KOSPI",
+      "cap_eok": 3174.6,
+      "streak": 1
+    },
+    "244920": {
+      "name": "에이플러스에셋",
+      "market": "KOSPI",
+      "cap_eok": 3022.6,
+      "streak": 1
+    }
+  }
+}

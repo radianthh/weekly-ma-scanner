@@ -1,0 +1,13 @@
+.env
+.kiwoom_token_cache.json
+.kiwoom_token_cache.json.tmp
+.cache/
+.venv/
+__pycache__/
+*.py[cod]
+.DS_Store
+_sample_report.html
+
+# .env 백업본에도 키가 들어 있다
+.env.bak.*
+.env.local
