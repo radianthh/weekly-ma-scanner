@@ -7,12 +7,6 @@
 - **수정주가 주봉**: 키움증권 REST API
 - **출력**: `reports/{YYYYMMDD}_주봉_정배열.{html,csv,txt}` + `reports/history/{날짜}.json`
 
-데이터 출처는 이 둘뿐입니다. HTTP 기반 키움 REST API를 쓰므로 Windows 전용 OpenAPI+와 달리
-macOS·Linux에서 실행됩니다.
-
-> 기계적 스크리너이며 투자 권유가 아닙니다. 이동평균 정배열은 후행 지표이고,
-> 투자 판단과 결과의 책임은 투자자 본인에게 있습니다.
-
 ## 설치
 
 Python 3.11 권장.
@@ -52,8 +46,6 @@ MAIL_FROM=네이버아이디@naver.com
 - 2단계 인증을 켰다면 계정 비밀번호가 아니라 **애플리케이션 비밀번호**가 필요합니다.
 - `SMTP_USER`는 `@naver.com`을 뺀 아이디이므로 `MAIL_FROM`을 반드시 적으세요.
 - `MAIL_TO`가 비어 있으면 발송을 건너뜁니다. 쉼표로 여러 주소를 넣을 수 있습니다.
-- 선택: `SMTP_HOST`(기본 `smtp.naver.com`), `SMTP_PORT`(기본 `465`, `587`이면 STARTTLS),
-  `MAIL_FROM_NAME`, `MAIL_ATTACH=0`(첨부 없이 본문만).
 
 설정만 확인하려면 (스캔 없이 메일 한 통):
 
