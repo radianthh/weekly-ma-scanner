@@ -308,7 +308,7 @@ def send_check() -> list[str]:
     message.set_content(
         "주봉 정배열 스캐너의 SMTP 설정이 정상입니다.\n"
         f"발송 시각: {datetime.now():%Y-%m-%d %H:%M:%S}\n"
-        "매주 금요일 16:00 실행 결과가 이 주소로 옵니다."
+        "매주 금요일 18:00부터 스캔이 성공할 때까지 시도하고, 그 결과가 이 주소로 옵니다."
     )
     deliver(message, config)
     return config.recipients

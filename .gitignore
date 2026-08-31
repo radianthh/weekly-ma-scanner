@@ -7,6 +7,7 @@
 
 # 실행 중 생기는 것 (리포트는 메일 첨부로 보관된다)
 .cache/
+.state/
 run.log
 reports/
 

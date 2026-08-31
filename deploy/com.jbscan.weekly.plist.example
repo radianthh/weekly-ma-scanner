@@ -1,5 +1,9 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<!-- 금요일 18:00에 한 번, 그리고 30분마다 run_weekly.sh를 부른다.
+     스크립트가 "이번 주 리포트가 이미 있는가"를 보고 있으면 즉시 끝내므로
+     대부분의 호출은 아무 일도 하지 않는다. 리포트를 만들 때까지 다시 시도하는
+     쪽이 목적이다 — 키움 허용 IP에 언제 앉을지는 미리 알 수 없다. -->
 <plist version="1.0"><dict>
   <key>Label</key><string>com.jbscan.weekly</string>
   <key>ProgramArguments</key><array>
@@ -9,9 +13,10 @@
   <key>WorkingDirectory</key><string>/ABSOLUTE/PATH/jbscan</string>
   <key>StartCalendarInterval</key><dict>
     <key>Weekday</key><integer>5</integer>
-    <key>Hour</key><integer>16</integer>
+    <key>Hour</key><integer>18</integer>
     <key>Minute</key><integer>0</integer>
   </dict>
+  <key>StartInterval</key><integer>1800</integer>
   <key>StandardOutPath</key><string>/ABSOLUTE/PATH/jbscan/run.log</string>
   <key>StandardErrorPath</key><string>/ABSOLUTE/PATH/jbscan/run.log</string>
 </dict></plist>
