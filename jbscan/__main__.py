@@ -71,6 +71,11 @@ def parse_args() -> argparse.Namespace:
     parser.add_argument("--exclude-file", default="exclude.txt")
     parser.add_argument("--strict-date", action="store_true", help="기준일 데이터 미반영 시 종료코드 2")
     parser.add_argument("--dry-run", action="store_true", help="유니버스만 구성하고 키움 호출 없이 종료")
+    parser.add_argument(
+        "--check-auth",
+        action="store_true",
+        help="키움 토큰만 새로 받아 보고 종료 (등록 IP면 0, 아니면 3)",
+    )
     parser.add_argument("--no-mail", action="store_true", help="리포트만 만들고 메일은 보내지 않음")
     return parser.parse_args()
 
@@ -84,10 +89,25 @@ def main() -> int:
     if args.rps <= 0:
         raise ValueError("--rps는 0보다 커야 합니다.")
 
+    if args.check_auth:
+        # 등록된 IP인지만 묻는다. 캐시된 토큰은 발급 시점의 IP로 받은 것이라
+        # 지금 막혀 있어도 통과하므로 반드시 새로 발급받는다.
+        auth_client = KiwoomClient(KiwoomConfig.from_env(), cache_dir=args.cache_dir, rps=args.rps)
+        auth_client.preflight(force=True)
+        log("키움 인증 확인: 이 컴퓨터의 공인 IP가 등록되어 있습니다")
+        return 0
+
     requested = datetime.strptime(args.date, "%Y-%m-%d").date() if args.date else None
     asof = last_friday(requested)
     previous_friday = asof - timedelta(days=7)
     log(f"기준 주: {asof:%Y-%m-%d} (금)")
+
+    client = None
+    if not args.dry_run:
+        # KRX 유니버스 구성은 수 분이 걸린다. 인증이 막혀 있으면 그 시간이 통째로
+        # 버려지고, 재시도할 때마다 되풀이된다. 토큰부터 확인한다.
+        client = KiwoomClient(KiwoomConfig.from_env(), cache_dir=args.cache_dir, rps=args.rps)
+        client.preflight()
 
     universe_result = build_universe(
         asof=asof,
@@ -106,10 +126,7 @@ def main() -> int:
         log(f"dry-run 완료: 검토 대상 {len(universe_result.frame):,}종목")
         return 0
 
-    config = KiwoomConfig.from_env()
-    client = KiwoomClient(config, cache_dir=args.cache_dir, rps=args.rps)
-    # 인증을 먼저 확인한다. 실패한 채로 진행하면 종목 수만큼 토큰 발급을 시도한다.
-    client.preflight()
+    assert client is not None  # dry-run이 아니면 위에서 만들어 둔다
     scanned, failures = scan(
         client, universe_result.frame, asof, args.years, args.workers, args.refresh
     )

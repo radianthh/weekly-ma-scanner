@@ -235,14 +235,17 @@ class KiwoomClient:
         log("키움 접근토큰 발급 및 캐시 완료")
         return token
 
-    def preflight(self) -> None:
+    def preflight(self, force: bool = False) -> None:
         """스캔 전에 토큰을 한 번 받아 본다.
 
         인증 실패는 재시도로 풀리지 않는다. 이 검사가 없으면 종목 수만큼
         토큰 발급을 시도해 유량 제한(HTTP 429)까지 맞는다.
+
+        force=True면 캐시를 무시하고 새로 발급받는다. 캐시된 토큰은 발급 시점의
+        IP로 받은 것이라, 지금 IP가 등록돼 있는지 묻는 검사에서는 답이 되지 않는다.
         """
         try:
-            self.access_token()
+            self.access_token(force=force)
         except KiwoomError as exc:
             if "8050" in str(exc) or "지정단말기" in str(exc):
                 raise KiwoomError(
