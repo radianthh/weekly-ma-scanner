@@ -235,6 +235,25 @@ class KiwoomClient:
         log("키움 접근토큰 발급 및 캐시 완료")
         return token
 
+    def preflight(self) -> None:
+        """스캔 전에 토큰을 한 번 받아 본다.
+
+        인증 실패는 재시도로 풀리지 않는다. 이 검사가 없으면 종목 수만큼
+        토큰 발급을 시도해 유량 제한(HTTP 429)까지 맞는다.
+        """
+        try:
+            self.access_token()
+        except KiwoomError as exc:
+            if "8050" in str(exc) or "지정단말기" in str(exc):
+                raise KiwoomError(
+                    f"{exc}\n"
+                    "  호출한 컴퓨터의 공인 IP가 키움에 등록되어 있지 않습니다.\n"
+                    "  https://openapi.kiwoom.com/ 에서 현재 공인 IP를 등록하세요.\n"
+                    "  현재 IP는 `curl -s https://api.ipify.org` 로 확인합니다.",
+                    code=exc.code,
+                ) from exc
+            raise
+
     def access_token(self, force: bool = False) -> str:
         with self._token_lock:
             if not force and self._token and self._expires_at - time.time() > 600:

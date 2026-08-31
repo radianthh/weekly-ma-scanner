@@ -25,6 +25,14 @@ cp .env.example .env
 [키움 REST API 포털](https://openapi.kiwoom.com/)에서 운영 App Key를 발급하고
 **호출할 컴퓨터의 공인 IP를 등록**해야 합니다. `pykrx`의 로그인 세션 때문에 KRX 계정도 필요합니다.
 
+> **IP는 실행 시점마다 검사됩니다.** 등록되지 않은 IP에서 부르면 토큰 발급이
+> `8050:지정단말기 인증에 실패`로 거절됩니다. 가정용 회선은 유동 IP라 공유기 재부팅이나
+> ISP 임대 갱신으로 바뀔 수 있고, 노트북을 다른 망(카페·회사·테더링)으로 옮겨도 실패합니다.
+> 현재 IP는 `curl -s https://api.ipify.org`로 확인합니다.
+>
+> 스캔 전에 토큰을 한 번 받아 보고 실패하면 **즉시 중단**합니다(종료코드 3). 이 검사가 없으면
+> 종목 수만큼 발급을 재시도해 유량 제한(HTTP 429)까지 맞습니다.
+
 ```dotenv
 KIWOOM_APP_KEY=발급받은_App_Key
 KIWOOM_APP_SECRET=발급받은_Secret_Key

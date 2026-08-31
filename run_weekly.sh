@@ -19,6 +19,11 @@ for attempt in 1 2 3 4; do
   .venv/bin/python -m jbscan --strict-date "$@"
   code=$?
   if [ "$code" -eq 0 ]; then exit 0; fi
+  if [ "$code" -eq 3 ]; then
+    echo "키움 인증 실패 — 공인 IP 등록 확인 필요"
+    notify_failure "키움 인증 실패 — 이 컴퓨터의 공인 IP가 키움에 등록되어 있는지 확인하세요"
+    exit 3
+  fi
   if [ "$code" -ne 2 ]; then
     echo "실행 실패(코드 $code)"
     notify_failure "스캔이 오류로 중단됨 (종료코드 $code)"

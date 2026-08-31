@@ -108,6 +108,8 @@ def main() -> int:
 
     config = KiwoomConfig.from_env()
     client = KiwoomClient(config, cache_dir=args.cache_dir, rps=args.rps)
+    # 인증을 먼저 확인한다. 실패한 채로 진행하면 종목 수만큼 토큰 발급을 시도한다.
+    client.preflight()
     scanned, failures = scan(
         client, universe_result.frame, asof, args.years, args.workers, args.refresh
     )
@@ -160,6 +162,10 @@ def main() -> int:
 if __name__ == "__main__":
     try:
         sys.exit(main())
-    except (KiwoomError, RuntimeError, ValueError) as exc:
+    except KiwoomError as exc:
+        log(f"오류: {exc}")
+        # 인증 실패는 재시도로 풀리지 않으므로 별도 코드로 구분한다.
+        sys.exit(3 if "8050" in str(exc) or "지정단말기" in str(exc) else 1)
+    except (RuntimeError, ValueError) as exc:
         log(f"오류: {exc}")
         sys.exit(1)
