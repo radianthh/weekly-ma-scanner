@@ -18,7 +18,7 @@ from pathlib import Path
 import pandas as pd
 from dotenv import load_dotenv
 
-from report import Changes, fmt_cap, fmt_price, render_text
+from .report import Changes, fmt_cap, fmt_price, render_text
 
 INK = "#1a1a1a"
 SUB = "#8a8a8a"
@@ -343,7 +343,9 @@ def send_failure(reason: str, log_path: str | Path | None = None, tail: int = 25
 
 
 def main() -> int:
-    parser = argparse.ArgumentParser(description="리포트 메일 발송 도우미")
+    parser = argparse.ArgumentParser(
+        prog="python -m jbscan.mailer", description="리포트 메일 발송 도우미"
+    )
     parser.add_argument("--failure", metavar="사유", help="실패 알림 메일을 보낸다")
     parser.add_argument("--log", help="실패 알림에 덧붙일 로그 파일")
     args = parser.parse_args()

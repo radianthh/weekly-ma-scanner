@@ -11,11 +11,11 @@ from pathlib import Path
 
 import pandas as pd
 
-from kiwoom_client import KiwoomClient, KiwoomConfig, KiwoomError, log
-from mailer import MailError, send_report
-from report import compare_with_previous, save_reports
-from screen import evaluate, last_friday
-from universe import DEFAULT_MIN_CAP_EOK, build_universe, read_exclusions
+from .kiwoom_client import KiwoomClient, KiwoomConfig, KiwoomError, log
+from .mailer import MailError, send_report
+from .report import compare_with_previous, save_reports
+from .screen import evaluate, last_friday
+from .universe import DEFAULT_MIN_CAP_EOK, build_universe, read_exclusions
 
 
 def scan(
@@ -57,7 +57,9 @@ def scan(
 
 
 def parse_args() -> argparse.Namespace:
-    parser = argparse.ArgumentParser(description="주봉 정배열 스캐너 (키움 REST 수정주가)")
+    parser = argparse.ArgumentParser(
+        prog="python -m jbscan", description="주봉 정배열 스캐너 (키움 REST 수정주가)"
+    )
     parser.add_argument("--date", help="기준일 YYYY-MM-DD (기본: 최근 금요일)")
     parser.add_argument("--min-cap", type=int, default=DEFAULT_MIN_CAP_EOK, help="시가총액 하한(억원)")
     parser.add_argument("--years", type=int, default=4, help="주봉 조회 기간(년)")

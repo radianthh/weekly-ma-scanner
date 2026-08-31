@@ -58,7 +58,7 @@ MAIL_FROM=네이버아이디@naver.com
 설정만 확인하려면 (스캔 없이 메일 한 통):
 
 ```bash
-.venv/bin/python mailer.py
+.venv/bin/python -m jbscan.mailer
 ```
 
 `.env`와 `.kiwoom_token_cache.json`은 Git에서 제외됩니다. 키를 커밋하거나 로그에 남기지 마세요.
@@ -66,28 +66,17 @@ MAIL_FROM=네이버아이디@naver.com
 ## 실행
 
 ```bash
-python jb_scan.py                          # 최근 금요일 기준
-python jb_scan.py --date 2026-08-14 --refresh
-python jb_scan.py --dry-run                # 유니버스만, 키움 호출 없음
+python -m jbscan                           # 최근 금요일 기준
+python -m jbscan --date 2026-08-14 --refresh
+python -m jbscan --dry-run                 # 유니버스만, 키움 호출 없음
 ```
-
-| 옵션 | 기본값 | 설명 |
-|---|---:|---|
-| `--min-cap` | 3000 | 시가총액 하한(억원) |
-| `--years` | 4 | 주봉 조회 기간 |
-| `--rps` | 8 | 키움 초당 요청 수 |
-| `--workers` | 4 | 동시 작업 수(최대 4) |
-| `--refresh` | off | 캐시 무시하고 재조회 |
-| `--strict-date` | off | 기준일 데이터 미반영 시 종료코드 2 |
-| `--dry-run` | off | 유니버스만 만들고 종료 |
-| `--no-mail` | off | 리포트만 만들고 메일 생략 |
 
 ## 자동 실행 (매주 금요일 16:00 KST)
 
-`com.jbscan.weekly.plist.example`의 `/ABSOLUTE/PATH/jbscan`을 실제 경로로 바꾼 뒤:
+`deploy/com.jbscan.weekly.plist.example`의 `/ABSOLUTE/PATH/jbscan`을 실제 경로로 바꾼 뒤:
 
 ```bash
-cp com.jbscan.weekly.plist.example ~/Library/LaunchAgents/com.jbscan.weekly.plist
+cp deploy/com.jbscan.weekly.plist.example ~/Library/LaunchAgents/com.jbscan.weekly.plist
 launchctl bootstrap gui/$(id -u) ~/Library/LaunchAgents/com.jbscan.weekly.plist
 launchctl print  gui/$(id -u)/com.jbscan.weekly   # 확인
 launchctl bootout gui/$(id -u)/com.jbscan.weekly  # 해제
@@ -103,11 +92,16 @@ launchctl bootout gui/$(id -u)/com.jbscan.weekly  # 해제
 ## 구조
 
 ```text
-jb_scan.py         진입점 (스캔 → 리포트 → 메일)
-kiwoom_client.py   키움 인증·유량제한·주봉·캐시
-universe.py        pykrx 유니버스와 종목명
-screen.py          주봉 정규화·MA·유지 기간
-report.py          HTML/CSV/TXT/JSON 생성
-mailer.py          메일 발송과 실패 알림
-run_weekly.sh      금요일 실행·재시도·실패 알림
+run_weekly.sh              금요일 실행·재시도·실패 알림 (launchd 진입점)
+jbscan/
+  __main__.py              CLI (python -m jbscan)
+  kiwoom_client.py         키움 인증·유량제한·주봉·캐시
+  universe.py              pykrx 유니버스와 종목명
+  screen.py                주봉 정규화·MA·유지 기간
+  report.py                HTML/CSV/TXT/JSON 생성
+  mailer.py                메일 발송과 실패 알림
+deploy/                    launchd plist 템플릿
+reports/                   출력 (Git 추적 제외)
 ```
+
+`run_weekly.sh`는 launchd plist가 절대경로로 가리키므로 루트에 있어야 합니다.

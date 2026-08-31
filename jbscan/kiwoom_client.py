@@ -16,7 +16,7 @@ import pandas as pd
 import requests
 from dotenv import load_dotenv
 
-from screen import normalize_weekly
+from .screen import normalize_weekly
 
 BASE_URL = "https://api.kiwoom.com"
 TOKEN_PATH = "/oauth2/token"

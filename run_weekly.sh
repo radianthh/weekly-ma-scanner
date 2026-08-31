@@ -11,12 +11,12 @@ fi
 # 리포트를 못 만든 날에도 메일이 오게 한다. 아무 메일도 오지 않으면
 # 정상인지 고장인지 구분할 수 없다.
 notify_failure() {
-  .venv/bin/python mailer.py --failure "$1" --log run.log || \
+  .venv/bin/python -m jbscan.mailer --failure "$1" --log run.log || \
     echo "실패 알림 메일도 보내지 못했습니다"
 }
 
 for attempt in 1 2 3 4; do
-  .venv/bin/python jb_scan.py --strict-date "$@"
+  .venv/bin/python -m jbscan --strict-date "$@"
   code=$?
   if [ "$code" -eq 0 ]; then exit 0; fi
   if [ "$code" -ne 2 ]; then
