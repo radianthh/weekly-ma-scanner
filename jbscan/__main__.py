@@ -14,7 +14,7 @@ import pandas as pd
 from .kiwoom_client import KiwoomClient, KiwoomConfig, KiwoomError, log
 from .mailer import MailError, send_report
 from .report import compare_with_previous, save_reports
-from .screen import evaluate, last_friday
+from .screen import evaluate, last_friday, week_monday
 from .universe import DEFAULT_MIN_CAP_EOK, build_universe, read_exclusions
 
 
@@ -117,10 +117,17 @@ def main() -> int:
     )
     if universe_result.trade_date != asof:
         message = f"기준일 KRX 데이터 미반영: {asof} 요청, {universe_result.trade_date} 사용"
-        if args.strict_date:
+        # 금요일이 휴장일이면(추석·신정 등) 그 주의 마지막 거래일 스냅샷이 곧 확정값이고,
+        # 기다려도 금요일 데이터는 영영 생기지 않는다. 다만 금요일 당일 저녁에는 휴장과
+        # "아직 안 올라옴"을 구분할 수 없으므로, 하루가 지난 뒤에만 같은 주 스냅샷을 받는다.
+        same_week = week_monday(universe_result.trade_date) == week_monday(asof)
+        if same_week and date.today() > asof:
+            log(f"금요일 휴장으로 보고 그 주 마지막 거래일을 씁니다: {universe_result.trade_date}")
+        elif args.strict_date:
             log("중단: " + message)
             return 2
-        log("경고: " + message)
+        else:
+            log("경고: " + message)
 
     if args.dry_run:
         log(f"dry-run 완료: 검토 대상 {len(universe_result.frame):,}종목")
