@@ -5,6 +5,7 @@ from __future__ import annotations
 
 import argparse
 import sys
+import time
 from concurrent.futures import ThreadPoolExecutor, as_completed
 from datetime import date, datetime, timedelta
 from pathlib import Path
@@ -16,6 +17,9 @@ from .mailer import MailError, send_report
 from .report import compare_with_previous, save_reports
 from .screen import evaluate, last_friday, week_monday
 from .universe import DEFAULT_MIN_CAP_EOK, build_universe, read_exclusions
+
+
+RETRY_PAUSE = 10
 
 
 def scan(
@@ -50,6 +54,21 @@ def scan(
             if count % 50 == 0 or count == total:
                 log(f"시세 수집 {count}/{total} (실패 {len(failures)})")
 
+    if failures:
+        # 순간적인 네트워크 끊김이나 유량 제한은 잠시 뒤 한 번 더 받으면 대개 풀린다.
+        log(f"실패 {len(failures)}종목을 {RETRY_PAUSE}초 뒤 한 번 더 조회합니다")
+        time.sleep(RETRY_PAUSE)
+        still: list[str] = []
+        for ticker in failures:
+            _, result, error = work(ticker)
+            if error:
+                still.append(ticker)
+                log(f"시세 재실패 {ticker}: {error}")
+            elif result is not None:
+                rows.append({"티커": ticker, **result})
+        log(f"재조회 후 실패 {len(still)}종목")
+        failures = still
+
     if not rows:
         raise RuntimeError("판정 가능한 주봉을 한 건도 받지 못했습니다.")
     result_frame = pd.DataFrame(rows).set_index("티커")
@@ -75,6 +94,11 @@ def parse_args() -> argparse.Namespace:
         "--check-auth",
         action="store_true",
         help="키움 토큰만 새로 받아 보고 종료 (등록 IP면 0, 아니면 3)",
+    )
+    parser.add_argument(
+        "--strict-complete",
+        action="store_true",
+        help="시세를 못 받은 종목이 남으면 리포트를 만들지 않고 코드 4로 끝냄",
     )
     parser.add_argument("--no-mail", action="store_true", help="리포트만 만들고 메일은 보내지 않음")
     return parser.parse_args()
@@ -138,6 +162,11 @@ def main() -> int:
         client, universe_result.frame, asof, args.years, args.workers, args.refresh
     )
     log(f"판정 완료: {len(scanned):,}종목 (주봉 53개 이상)")
+    if failures and args.strict_complete:
+        # 빠진 종목이 있는 리포트를 내보내면 완료로 기록돼 다시 돌지 않는다.
+        # 캐시 덕에 재시도는 실패 종목만 다시 받으므로 금방 끝난다.
+        log(f"중단: 시세 실패 {len(failures)}종목 — 리포트를 만들지 않습니다: {', '.join(failures)}")
+        return 4
 
     latest_week = max(scanned["week_end"]) if not scanned.empty else None
     if latest_week != asof:
@@ -151,7 +180,10 @@ def main() -> int:
         ["streak", "시가총액_억"], ascending=[False, False]
     )
     history_dir = Path(args.out_dir) / "history"
-    changes = compare_with_previous(history_dir, previous_friday, scanned, passed)
+    changes = compare_with_previous(history_dir, previous_friday, scanned, passed, set(failures))
+    failed = universe_result.frame.loc[failures, ["종목명", "시장", "시가총액_억"]].sort_values(
+        "시가총액_억", ascending=False
+    )
     context: dict[str, object] = {
         "asof": asof,
         "prev_friday": previous_friday,
@@ -161,6 +193,7 @@ def main() -> int:
         "scanned": scanned,
         "changes": changes,
         "min_cap": args.min_cap,
+        "failed": failed,
         "has_exclusions": bool(read_exclusions(args.exclude_file)),
     }
     paths = save_reports(context, args.out_dir)
@@ -174,7 +207,8 @@ def main() -> int:
             log(f"메일 발송: {', '.join(send_report(context, paths))}")
         except MailError as exc:
             # 리포트는 이미 저장됐으므로 발송 실패로 스캔 전체를 되돌리지 않는다.
-            log(f"경고: 메일 발송 실패 — {exc}")
+            # 메일은 .state에 보관되고 run_weekly.sh가 30분마다 재발송한다.
+            log(f"경고: 메일 발송 실패 — {exc} · 보관 후 재발송 대기")
 
     if failures:
         log(f"최종 실패 {len(failures)}종목: {', '.join(failures)}")

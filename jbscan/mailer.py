@@ -4,6 +4,8 @@
 from __future__ import annotations
 
 import argparse
+import email
+import email.policy
 import html
 import mimetypes
 import os
@@ -18,7 +20,7 @@ from pathlib import Path
 import pandas as pd
 from dotenv import load_dotenv
 
-from .report import Changes, fmt_cap, fmt_price, render_text
+from .report import Changes, failed_names, fmt_cap, fmt_price, render_text
 
 INK = "#1a1a1a"
 SUB = "#8a8a8a"
@@ -38,8 +40,23 @@ CARD = (
 )
 
 
+PENDING_DIR = Path(".state")
+
+
 class MailError(RuntimeError):
     """메일 설정이 없거나 발송에 실패했을 때."""
+
+
+def pending_path(asof: date, state_dir: str | Path = PENDING_DIR) -> Path:
+    """발송에 실패한 리포트 메일을 보관하는 자리. run_weekly.sh가 이 파일을 보고 재발송한다."""
+    return Path(state_dir) / f"mail-pending-{asof:%Y-%m-%d}.eml"
+
+
+def _save_pending(message: EmailMessage, path: Path) -> None:
+    path.parent.mkdir(parents=True, exist_ok=True)
+    temp = path.with_suffix(".tmp")
+    temp.write_bytes(message.as_bytes())
+    temp.replace(path)
 
 
 class MailConfig:
@@ -119,9 +136,11 @@ def build_subject(context: dict[str, object]) -> str:
     passed: pd.DataFrame = context["passed"]  # type: ignore[assignment]
     changes: Changes = context["changes"]  # type: ignore[assignment]
     asof: date = context["asof"]  # type: ignore[assignment]
+    missing = failed_names(context)
     return (
         f"[주봉 정배열] {asof:%Y-%m-%d} · {len(passed)}종목 "
         f"(신규 {len(changes.new_df)} / 이탈 {len(changes.out_df)})"
+        + (f" · ⚠ 시세 누락 {len(missing)}" if missing else "")
     )
 
 
@@ -165,6 +184,16 @@ def build_html(context: dict[str, object]) -> str:
         f'<th style="{TH_C}">시장</th><th style="{TH}">시가총액</th></tr>'
     )
     columns = ["종목명", "시장", "시가총액_억"]
+    missing = failed_names(context)
+    missing_card = (
+        f'<div style="{CARD};border-color:#e5a03a">'
+        f'<h2 style="font-size:17px;margin:0 0 4px">⚠ 시세 누락 {len(missing)}종목</h2>'
+        f'<p style="color:{SUB};font-size:13px;margin:0 0 10px">키움에서 주봉을 받지 못해 판정에서 빠졌습니다. '
+        "정배열 여부를 알 수 없으며 이탈로도 세지 않았습니다.</p>"
+        f'<p style="margin:0;font-size:14px">{html.escape(", ".join(missing))}</p></div>'
+        if missing
+        else ""
+    )
     attach_note = (
         f'<p style="color:{SUB};font-size:13px;margin:0">'
         "전체 리포트 HTML과 CSV를 첨부했습니다. 분포 그래프와 산출 기준은 첨부 HTML에서 확인하세요.</p>"
@@ -179,7 +208,7 @@ color:{INK};font-size:15px;line-height:1.6">
 <h1 style="font-size:26px;margin:0 0 8px">주봉 정배열 종목 {asof:%Y-%m-%d} 기준</h1>
 <p style="color:{SUB};font-size:13px;margin:0 0 24px">{asof:%Y-%m-%d} 마감 기준 · 주봉 MA4 &gt; MA13 &gt; MA26 &gt; MA52 ·
 KOSPI·KOSDAQ 시가총액 {min_cap:,}억원 이상 · {generated:%Y-%m-%d %H:%M} 작성</p>
-
+{missing_card}
 <div style="{CARD}"><table role="presentation" width="100%" style="border-collapse:collapse"><tr>
 {_stat("정배열 종목", str(count), "종목")}
 {_stat("검토 대상", f"{len(scanned):,}", "종목")}
@@ -274,8 +303,13 @@ def send_report(
     context: dict[str, object],
     paths: dict[str, Path],
     config: MailConfig | None = None,
+    state_dir: str | Path = PENDING_DIR,
 ) -> list[str]:
-    """리포트를 메일로 보내고 수신 주소를 돌려준다. 실패하면 MailError."""
+    """리포트를 메일로 보내고 수신 주소를 돌려준다. 실패하면 MailError.
+
+    리포트가 저장된 뒤라 스캔은 다시 돌지 않으므로, 발송에 실패한 메일은 그대로
+    .state/mail-pending-{기준일}.eml로 남겨 run_weekly.sh가 재발송하게 한다.
+    """
     config = config or MailConfig.from_env()
     context = {**context, "attached": config.attach}
 
@@ -293,8 +327,28 @@ def send_report(
             if path and Path(path).exists():
                 _attach(message, Path(path))
 
-    deliver(message, config)
+    pending = pending_path(context["asof"], state_dir)  # type: ignore[arg-type]
+    try:
+        deliver(message, config)
+    except MailError:
+        _save_pending(message, pending)
+        raise
+    # 이전 실행이 남긴 재발송 대기분은 이번 메일로 대체됐다. 남겨 두면 중복 발송된다.
+    pending.unlink(missing_ok=True)
     return config.recipients
+
+
+def resend_pending(path: str | Path) -> list[str]:
+    """보관해 둔 리포트 메일을 다시 보내고, 성공하면 파일을 지운다."""
+    path = Path(path)
+    message = email.message_from_bytes(path.read_bytes(), policy=email.policy.default)
+    assert isinstance(message, EmailMessage)
+    config = MailConfig.from_env()
+    del message["Date"]
+    message["Date"] = formatdate(localtime=True)
+    deliver(message, config)
+    path.unlink(missing_ok=True)
+    return [address.strip() for address in str(message["To"]).split(",") if address.strip()]
 
 
 def send_check() -> list[str]:
@@ -348,9 +402,13 @@ def main() -> int:
     )
     parser.add_argument("--failure", metavar="사유", help="실패 알림 메일을 보낸다")
     parser.add_argument("--log", help="실패 알림에 덧붙일 로그 파일")
+    parser.add_argument("--resend", metavar="EML", help="발송에 실패해 보관한 리포트 메일을 다시 보낸다")
     args = parser.parse_args()
     try:
-        if args.failure:
+        if args.resend:
+            sent = resend_pending(args.resend)
+            print(f"리포트 메일 재발송: {', '.join(sent)}")
+        elif args.failure:
             sent = send_failure(args.failure, args.log)
             print(f"실패 알림 발송: {', '.join(sent)}")
         else:

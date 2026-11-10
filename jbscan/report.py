@@ -60,7 +60,15 @@ def compare_with_previous(
     prev_friday: date,
     scanned: pd.DataFrame,
     passed: pd.DataFrame,
+    failed: set[str] | None = None,
 ) -> Changes:
+    """직전 주 목록과 비교한다.
+
+    이번 주에 시세를 못 받은 종목(failed)은 정배열인지 모르므로 이탈로 치지 않는다.
+    직전 스냅샷에서 시세를 못 받았던 종목은 그 주 목록에 없으므로, 이번 데이터로
+    직전 주 정배열 여부를 재계산해 채운다. 그러지 않으면 신규로 잘못 잡힌다.
+    """
+    failed = failed or set()
     snapshot_path = Path(history_dir) / f"{prev_friday:%Y-%m-%d}.json"
     previous_detail: dict[str, dict[str, object]] = {}
     if snapshot_path.exists():
@@ -68,6 +76,9 @@ def compare_with_previous(
             snapshot = json.loads(snapshot_path.read_text(encoding="utf-8"))
             previous = set(snapshot["tickers"])
             previous_detail = snapshot.get("detail", {})
+            for ticker in snapshot.get("failed", []):
+                if ticker in scanned.index and bool(scanned.loc[ticker, "aligned_prev"]):
+                    previous.add(ticker)
             source = "직전 실행 스냅샷"
         except (OSError, KeyError, TypeError, json.JSONDecodeError):
             previous = set(scanned.index[scanned["aligned_prev"]])
@@ -78,7 +89,7 @@ def compare_with_previous(
 
     current = set(passed.index)
     new_tickers = [ticker for ticker in passed.index if ticker not in previous]
-    out_tickers = [ticker for ticker in previous if ticker not in current]
+    out_tickers = [ticker for ticker in previous if ticker not in current and ticker not in failed]
     new_df = passed.loc[new_tickers, ["종목명", "시장", "시가총액_억"]]
 
     records: list[tuple[str, str, str, float]] = []
@@ -113,6 +124,14 @@ def _bars(items: list[tuple[str, str, float]]) -> str:
         f'<div class="bar"><div class="lab">{label}</div><div class="track"><div class="fill" style="width:{max(0, min(100, width)):.1f}%"></div></div><div class="val">{value}</div></div>'
         for label, value, width in items
     )
+
+
+def failed_names(context: dict[str, object]) -> list[str]:
+    """시세를 못 받아 판정에서 빠진 종목. '삼성전자(005930)' 꼴, 시가총액 큰 순."""
+    failed = context.get("failed")
+    if not isinstance(failed, pd.DataFrame) or failed.empty:
+        return []
+    return [f"{row['종목명']}({ticker})" for ticker, row in failed.iterrows()]
 
 
 def render_html(context: dict[str, object]) -> str:
@@ -156,11 +175,20 @@ def render_html(context: dict[str, object]) -> str:
     link_text = html.escape(os.getenv("REPORT_LINK_TEXT", ""))
     link_url = html.escape(os.getenv("REPORT_LINK_URL", "#"), quote=True)
     exclude_note = " · 사용자 제외 목록" if context.get("has_exclusions") else ""
+    missing = failed_names(context)
+    missing_card = (
+        f'<div class="card" style="border-color:#e5a03a"><h2>⚠ 시세 누락 {len(missing)}종목</h2>'
+        '<p class="note">키움에서 주봉을 받지 못해 판정에서 빠졌습니다. 아래 종목은 정배열 여부를 알 수 없으며 '
+        '이탈로도 세지 않았습니다.</p>'
+        f'<p>{html.escape(", ".join(missing))}</p></div>'
+        if missing
+        else ""
+    )
 
     return f"""<!doctype html><html lang="ko"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>주봉 정배열 종목 {asof:%Y-%m-%d} 기준</title><style>{CSS}</style></head><body><div class="wrap">
 <div class="top"><b>{title_left}</b><a href="{link_url}">{link_text}</a></div>
 <h1>주봉 정배열 종목 {asof:%Y-%m-%d} 기준</h1><p class="lead">{asof:%Y-%m-%d} 마감 기준 · 주봉 MA4 &gt; MA13 &gt; MA26 &gt; MA52 · KOSPI·KOSDAQ 시가총액 {min_cap:,}억원 이상 · {generated:%Y-%m-%d %H:%M} 작성</p>
-<div class="card stats"><div class="stat"><div class="k">정배열 종목</div><div class="v">{count}<small>종목</small></div></div><div class="stat"><div class="k">검토 대상</div><div class="v">{len(scanned)}<small>종목</small></div></div><div class="stat"><div class="k">비율</div><div class="v">{ratio:.1f}<small>%</small></div></div><div class="stat"><div class="k">최장 유지</div><div class="v">{longest}<small>주</small></div></div></div>
+{missing_card}<div class="card stats"><div class="stat"><div class="k">정배열 종목</div><div class="v">{count}<small>종목</small></div></div><div class="stat"><div class="k">검토 대상</div><div class="v">{len(scanned)}<small>종목</small></div></div><div class="stat"><div class="k">비율</div><div class="v">{ratio:.1f}<small>%</small></div></div><div class="stat"><div class="k">최장 유지</div><div class="v">{longest}<small>주</small></div></div></div>
 <div class="card"><h2>1. 판정 기준</h2><table><tr><th>기준 주</th><td style="text-align:left"><b>{asof:%Y-%m-%d} 마감 (금요일)</b></td></tr><tr><th>조건</th><td style="text-align:left"><b>주봉 MA4 &gt; MA13 &gt; MA26 &gt; MA52</b></td></tr><tr><th></th><td style="text-align:left;color:#aaa">4주·13주·26주·52주 = 1개월·1분기·반년·1년</td></tr><tr><th>대상</th><td style="text-align:left">KOSPI·KOSDAQ 시가총액 {min_cap:,}억원 이상, 상장 1년 이상</td></tr><tr><th>제외</th><td style="text-align:left">우선주 · 스팩 · 리츠 · ETF · ETN · 관리종목 · 거래정지{exclude_note}</td></tr><tr><th>정렬</th><td style="text-align:left">정배열 유지 기간 내림차순, 동률이면 시가총액 내림차순</td></tr></table></div>
 <div class="card"><h2>2. 주봉 정배열 종목 {count}개</h2><p class="note">유지 기간이 긴 순 · KOSPI {kospi} / KOSDAQ {kosdaq} · + 는 보유 데이터 전 구간이 정배열이라 시작 시점이 더 이전임을 뜻합니다</p><table><tr><th>종목</th><th>코드</th><th>시장</th><th>유지</th><th>시작 주</th><th>시가총액</th><th>종가</th></tr>{''.join(body)}</table></div>
 <div class="card"><h2>3. 지난주 대비 변화</h2><p class="note">직전 주({prev_friday:%Y-%m-%d}) 목록과 비교 · {changes.source}</p><p><b>▶ 신규 진입 {len(changes.new_df)}</b></p>{_simple_table(changes.new_df)}<div style="height:22px"></div><p><b>▼ 이탈 {len(changes.out_df)}</b></p>{_simple_table(changes.out_df)}</div>
@@ -177,6 +205,11 @@ def render_text(context: dict[str, object]) -> str:
     lines = [
         f"[주봉 정배열] {asof:%Y-%m-%d} 기준 · MA4>13>26>52",
         f"통과 {len(passed)}종목 (신규 {len(changes.new_df)} / 이탈 {len(changes.out_df)})",
+    ]
+    missing = failed_names(context)
+    if missing:
+        lines.append(f"⚠ 시세 누락 {len(missing)}종목(판정 제외): {', '.join(missing)}")
+    lines += [
         "", f"▶ 신규 진입 {len(changes.new_df)}",
     ]
     for ticker, row in changes.new_df.iterrows():
@@ -219,6 +252,7 @@ def save_reports(context: dict[str, object], out_dir: str | Path) -> dict[str, P
         "asof": f"{asof:%Y-%m-%d}", "trade_date": f"{trade_date:%Y-%m-%d}",
         "min_cap_eok": int(context["min_cap"]), "universe": len(scanned),
         "tickers": list(passed.index),
+        "failed": list(context["failed"].index) if isinstance(context.get("failed"), pd.DataFrame) else [],
         "detail": {
             ticker: {"name": row["종목명"], "market": row["시장"], "cap_eok": round(float(row["시가총액_억"]), 1), "streak": int(row["streak"])}
             for ticker, row in passed.iterrows()

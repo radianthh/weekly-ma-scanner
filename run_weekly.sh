@@ -34,7 +34,18 @@ until_text=$(date -r "$deadline" '+%m-%d %H:%M')
 now=$(date +%s)
 
 mkdir -p "$STATE"
-find "$STATE" \( -name 'gaveup-*' -o -name 'tried-*' \) -mtime +30 -delete 2>/dev/null
+find "$STATE" \( -name 'gaveup-*' -o -name 'tried-*' -o -name 'incomplete-*' -o -name 'mail-pending-*.eml' \) -mtime +30 -delete 2>/dev/null
+
+# 리포트는 만들었는데 메일만 실패한 주. 리포트가 있으면 아래에서 바로 끝나므로
+# 그 전에, 보관해 둔 메일을 다시 보낸다. 성공하면 mailer가 파일을 지운다.
+for pending in "$STATE"/mail-pending-*.eml; do
+  [ -f "$pending" ] || continue
+  if result=$(.venv/bin/python -m jbscan.mailer --resend "$pending" 2>&1); then
+    say "$result ($(basename "$pending"))"
+  else
+    say "$(basename "$pending"): $(printf '%s\n' "$result" | tail -1 | cut -c1-160) · 다음 호출에서 재시도"
+  fi
+done
 
 # 이미 만들었으면 할 일이 없다. 조용히 끝내야 로그가 30분마다 불어나지 않는다.
 [ -f "reports/history/$target.json" ] && exit 0
@@ -79,13 +90,27 @@ if [ "$auth_code" -ne 0 ]; then
   exit 0
 fi
 
+# 시세를 못 받은 종목이 남으면 처음 몇 번은 리포트를 만들지 않고 다시 돈다.
+# 같은 종목이 계속 실패하면(종목 자체 문제) 리포트가 영영 안 나오므로,
+# 그 뒤에는 누락 종목을 리포트와 메일에 밝히고 내보낸다.
+INCOMPLETE_TRIES="${JBSCAN_INCOMPLETE_TRIES:-3}"
+incomplete="$STATE/incomplete-$target"
+tries=$(cat "$incomplete" 2>/dev/null || echo 0)
+complete_flag="--strict-complete"
+if [ "$tries" -ge "$INCOMPLETE_TRIES" ]; then
+  complete_flag=""
+  say "기준일 $target: 시세 누락으로 ${tries}번 미뤘으므로 이번에는 누락 종목을 표시하고 리포트를 냅니다"
+fi
+
 say "기준일 $target 스캔 시작 (마감 $until_text)"
-.venv/bin/python -m jbscan --strict-date "$@"
+.venv/bin/python -m jbscan --strict-date $complete_flag "$@"
 code=$?
 case "$code" in
-  0) exit 0 ;;
+  0) rm -f "$incomplete"; exit 0 ;;
   2) say "기준일 $target: 데이터 미반영 — 다음 호출에서 재시도 (마감 $until_text)" ;;
   3) say "기준일 $target: 키움 인증 실패 — 다음 호출에서 재시도 (마감 $until_text)" ;;
+  4) echo $(( tries + 1 )) > "$incomplete"
+     say "기준일 $target: 시세 누락 — 다음 호출에서 재시도 ($(( tries + 1 ))/$INCOMPLETE_TRIES, 마감 $until_text)" ;;
   *) say "기준일 $target: 스캔 실패(코드 $code) — 다음 호출에서 재시도 (마감 $until_text)" ;;
 esac
 exit "$code"
